@@ -1,19 +1,18 @@
 import RPi.GPIO as GPIO
 
-# LED / GPIO Hilfsfunktionen (minimalistisch)
 
 def setup_led(pin):
-    """Richtet Pin als OUTPUT ein"""
+    """Configure pin as OUTPUT"""
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(pin, GPIO.OUT)
     return True
 
 def clear_led(pin):
-    """Gibt Pin wieder frei"""
+    """Release pin"""
     GPIO.cleanup(pin)
 
 class get:
-    # Leseoperationen
+    # Read operations
     def led(pin):
         try:
             if GPIO.input(pin) == GPIO.HIGH:
@@ -24,7 +23,7 @@ class get:
             return False
         
 class set:
-    # Schreiboperationen
+    # Write operations
     def led_on(pin, repeat=False):
         try:
             GPIO.output(pin, GPIO.HIGH)
@@ -51,7 +50,7 @@ class set:
                 print('x')
 
     def led(pin, state):
-        """Schaltet LED anhand Bool/Keyword"""
+        """Set LED based on bool/keyword"""
         if isinstance(state, bool):
             if state:
                 set.led_on(pin)
@@ -65,7 +64,7 @@ class set:
             raise False
         
     def switch(pin):
-        """Toggle Zustand"""
+        """Toggle state"""
         if get.led(pin):
             set.led_off(pin)
             return False
@@ -75,7 +74,7 @@ class set:
 
 class Cleanup:
     def __del__(self):
-        # Fallback Clean-up beim GC
+        # Fallback clean-up on GC
         GPIO.cleanup()
 
 cleanup_instance = Cleanup()

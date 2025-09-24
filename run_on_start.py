@@ -3,11 +3,11 @@ import string
 import socket
 from datetime import datetime, timezone
 
-# Startup-/Hilfsfunktionen (IDs, Token, IP)
+# Startup/helper functions (IDs, token, IP)
 
 class generate:
     def system_id():
-        """Generiert eindeutige System-ID (Random + Zeit)"""
+        """Generate unique system ID (random + time)"""
         characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
         # Use random.choices() to generate a random string of the specified length
         random_string = ''.join(random.choices(characters, k=12))
@@ -18,7 +18,7 @@ class generate:
         return random_string
 
     def token():
-        """Zufälliger Sicherheits-Token (128 Zeichen)"""
+        """Random security token (128 characters)"""
         characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
         # Use random.choices() to generate a random string of the specified length
         random_string = ''.join(random.choices(characters, k=128))
@@ -26,7 +26,7 @@ class generate:
     
 class get:
     def ip():
-        """Ermittelt lokale LAN-IP (UDP Trick)"""
+        """Determine local LAN IP (UDP trick)"""
         try:
             # The IP address used here doesn't matter; it's just for checking the LAN IP.
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
