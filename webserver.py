@@ -10,8 +10,8 @@ from db import DBWrapper
 from buttons.press_button import PressButton
 from buttons.switch_button import SwitchButton
 
-# Zentrale Flask-App für Smart-Home Mini-System
-# Kern-Funktionen: Geräteverwaltung, Buttons, Remote-API, History
+# Main flask app for smart home system
+# Core functiontionality: device management, buttons, remote-API, history
 
 buttons = []
 
@@ -43,7 +43,7 @@ api_active = bool(config['DEFAULT']['api_active'].strip('"'))
 api_config = configparser.ConfigParser()
 api_config.read('api.conf')
 
-api_list = []  # Verknüpfte Fremd-Systeme
+api_list = []  # Linked external systems
 for api_group in api_config:
     if api_group != "DEFAULT":
         api_list += [{ "url": api_config[api_group]['url'].strip('"'), "token": api_config[api_group]['token'].strip('"')}]
@@ -57,7 +57,7 @@ if config['DEFAULT']['access_url'].strip('"') != "":
     access_url = config['DEFAULT']['access_url'].strip('"')  # Remove quotes
 else:
     access_url = "http://" +setup2.get.ip() + ":" + config['DEFAULT']['port'].strip('"')
-access_url = urllib.parse.quote(access_url)  # URL kodieren
+access_url = urllib.parse.quote(access_url)  # URL encoding
 
 with open('.conf', 'w') as configfile:
     config.write(configfile)
@@ -91,7 +91,7 @@ def get_api(api_id):
             return api
     return "[{ 'response': 'error'}]"
 
-db = DBWrapper(config["DEFAULT"]["db_name"])  # SQLite Instanz
+db = DBWrapper(config["DEFAULT"]["db_name"])  # SQLite object
 db.init_db()
 db.init_tables()
 
@@ -371,3 +371,4 @@ def start():
     app.run(debug=True, port=config['DEFAULT']['port'].strip('"'), host='0.0.0.0')
 
 start()
+
