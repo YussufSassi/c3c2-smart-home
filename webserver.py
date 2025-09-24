@@ -340,7 +340,7 @@ def api_device_switch(pin):
     code = request.args.get('code')
     if auth_check(code):
         pin = int(pin)
-        device = FA.get_device(pin)
+        device = db.get_device(pin)
         if device is None:
             return '[{ "state": false}]'
         LEDC.set.switch(pin)
