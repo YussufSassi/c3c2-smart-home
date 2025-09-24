@@ -5,15 +5,6 @@ from datetime import datetime, timezone
 
 # Startup-/Hilfsfunktionen (IDs, Token, IP)
 
-def check():
-    pass
-
-def create():
-    pass
-
-def new():
-    pass
-
 class generate:
     def system_id():
         """Generiert eindeutige System-ID (Random + Zeit)"""

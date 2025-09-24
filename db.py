@@ -2,7 +2,7 @@ import sqlite3
 from collections import defaultdict
 import time as t
 
-from exceptions import DBExistsException, DeviceTypeNotFoundException, DeviceNotFoundException
+from exceptions import DeviceTypeNotFoundException, DeviceNotFoundException
 
 # Datenbank-Wrapper für Gerätesteuerung (leichtgewichtig)
 # Fokus: Geräte, Typen, Logs, Zustands-Historie
