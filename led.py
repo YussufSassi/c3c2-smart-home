@@ -1,25 +1,5 @@
 import RPi.GPIO as GPIO
 
-# LED / GPIO helper functions (minimal)
-
-def usable(pin):
-    """Test if pin becomes HIGH (blocking until first read)"""
-    try:
-        # Set up the GPIO pin
-        GPIO.setmode(GPIO.BCM)
-        # Set the pin as an input with an optional pull-up or pull-down resistor
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    
-        while True:
-            # Read the state of the pin
-            if GPIO.input(pin):
-                return True
-            else:
-                return False
-    except KeyboardInterrupt:
-        pass
-    finally:
-        GPIO.cleanup(pin)
 
 def setup_led(pin):
     """Configure pin as OUTPUT"""

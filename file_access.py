@@ -14,28 +14,6 @@ def get_devices():
         print("device.json file is empty or corrupted. Starting with an empty list.")
         devices = []
     return devices
-    
-
-def get_device(pin):
-    """Get device by pin from JSON"""
-    try:
-        with open('device.json', 'r') as file:
-            devices = json.load(file)
-    except FileNotFoundError:
-        print("device.json file not found. Starting with an empty list.")
-        return None
-    except json.JSONDecodeError:
-        print("device.json file is empty or corrupted. Starting with an empty list.")
-        return None
-
-    # Search for the device by pin
-    for device in devices:
-        if device['pin'] == pin:
-            return device
-
-    # If no device with the given pin was found
-    print(f"No device found with pin {pin}.")
-    return None
 
 # Write the updated devices back to the JSON file
 def _save_devices(devices):

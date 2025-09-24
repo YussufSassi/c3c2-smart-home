@@ -2,15 +2,6 @@ import random
 import string
 import socket
 
-def check():
-    pass
-
-def create():
-    pass
-
-def new():
-    pass
-
 class generate:
     def system_id():
         characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
