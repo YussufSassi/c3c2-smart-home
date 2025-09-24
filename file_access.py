@@ -1,9 +1,9 @@
 import json
 
-# Einfacher JSON-Datei Speicher (device.json) – Übergangslösung neben SQLite
+# Simple JSON file storage (device.json) – interim solution alongside SQLite
 
 def get_devices():
-    """Lädt alle Geräte oder leere Liste"""
+    """Load all devices or empty list"""
     try:
         with open('device.json', 'r') as file:
             devices = json.load(file)
@@ -17,7 +17,7 @@ def get_devices():
     
 
 def get_device(pin):
-    """Gerät per Pin aus JSON holen"""
+    """Get device by pin from JSON"""
     try:
         with open('device.json', 'r') as file:
             devices = json.load(file)
@@ -39,13 +39,13 @@ def get_device(pin):
 
 # Write the updated devices back to the JSON file
 def _save_devices(devices):
-    """Schreibt komplette Liste zurück"""
+    """Write entire list back"""
     with open('device.json', 'w') as file:
         json.dump(devices, file, indent=4)
 
 # Check if a pin is already in use
 def check_pin(pin):
-    """True falls Pin bereits vergeben"""
+    """True if pin already in use"""
     devices = get_devices()
     for device in devices:
         if device["pin"] == pin:
@@ -54,7 +54,7 @@ def check_pin(pin):
 
 # Remove a device by its pin
 def remove(pin):
-    """Entfernt Gerät via Pin"""
+    """Remove device by pin"""
     devices = get_devices()
     updated_devices = [device for device in devices if device["pin"] != pin]
 
@@ -67,7 +67,7 @@ def remove(pin):
 
 # Add a new device to the JSON file
 def add_device(devicename, pin, device_type):
-    """Neues Gerät hinzufügen (ohne Validierungstiefe)"""
+    """Add new device (lightweight validation)"""
     devices = get_devices()
 
     # Check if the pin is already in use

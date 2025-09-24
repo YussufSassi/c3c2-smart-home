@@ -1,16 +1,16 @@
 class DBExistsException(Exception):
-    # Wird aktuell nicht genutzt – Reserve für spätere DB-Init Checks
+    # Currently unused – reserved for future DB init checks
     def __init__(self, message, errors):            
         super().__init__(message)
         self.errors = errors
 
 class DeviceTypeNotFoundException(Exception):
-    # Gerätetyp-ID existiert nicht
+    # Device type ID does not exist
     def __init__(self, message, errors):
         super().__init__(message)
     
 class DeviceNotFoundException(Exception):
-    # Gerät (Pin) nicht gefunden
+    # Device (pin) not found
     def __init__(self, message, errors):
         super().__init__(message)
     

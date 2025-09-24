@@ -10,8 +10,8 @@ from db import DBWrapper
 from buttons.press_button import PressButton
 from buttons.switch_button import SwitchButton
 
-# Zentrale Flask-App für Smart-Home Mini-System
-# Kern-Funktionen: Geräteverwaltung, Buttons, Remote-API, History
+# Central Flask app for smart-home mini system
+# Core features: device management, buttons, remote API, history
 
 buttons = []
 
@@ -43,7 +43,7 @@ api_active = bool(config['DEFAULT']['api_active'].strip('"'))
 api_config = configparser.ConfigParser()
 api_config.read('api.conf')
 
-api_list = []  # Verknüpfte Fremd-Systeme
+api_list = []  # Linked external systems
 for api_group in api_config:
     if api_group != "DEFAULT":
         api_list += [{ "url": api_config[api_group]['url'].strip('"'), "token": api_config[api_group]['token'].strip('"')}]
@@ -57,17 +57,17 @@ if config['DEFAULT']['access_url'].strip('"') != "":
     access_url = config['DEFAULT']['access_url'].strip('"')  # Remove quotes
 else:
     access_url = "http://" +setup2.get.ip() + ":" + config['DEFAULT']['port'].strip('"')
-access_url = urllib.parse.quote(access_url)  # URL kodieren
+access_url = urllib.parse.quote(access_url)  # URL encode
 
 with open('.conf', 'w') as configfile:
     config.write(configfile)
 
 def create_record(deviceID, state):
-    """Persistiert Zustandsänderung"""
+    """Persist state change"""
     db.create_record(deviceID, state)
 
 def switch(pin):
-    """Toggle physisches Gerät + Zustand speichern"""
+    """Toggle physical device and persist state"""
     device = db.get_device(pin)
     if device is None:
         return redirect(url_for('error'))
@@ -77,7 +77,7 @@ def switch(pin):
     create_record(int(device["id"]), state)
 
 def call_api_info():
-    """Initial: hole System-IDs verbundener APIs"""
+    """Init: fetch system IDs of linked APIs"""
     for api in api_list:
         print()
         url = api['url'] + f'/api/info?code='+ api['token']
@@ -91,14 +91,14 @@ def get_api(api_id):
             return api
     return "[{ 'response': 'error'}]"
 
-db = DBWrapper(config["DEFAULT"]["db_name"])  # SQLite Instanz
+db = DBWrapper(config["DEFAULT"]["db_name"])  # SQLite instance
 db.init_db()
 db.init_tables()
 
-# -------------------------- Web-Ansichten --------------------------
+# -------------------------- Web views --------------------------
 @app.route('/')
 def home():
-    """Übersicht: Geräte gruppiert nach Raum"""
+    """Overview: devices grouped by room"""
     devices = db.get_all_devices()
     num_rooms = db.get_number_of_rooms()
     grouped_devices = db.get_all_devices_grouped_by_room()
@@ -112,7 +112,7 @@ def home():
 
 @app.route('/device/<pin>/')
 def device(pin):
-    """Detailansicht eines Geräts"""
+    """Device detail view"""
     pin = int(pin)
     device = db.get_device(pin)
     if device is None:
@@ -125,14 +125,14 @@ def device(pin):
 
 @app.route('/switch/<pin>/')
 def device_switch(pin):
-    """UI: Gerät toggeln"""
+    """UI: toggle device"""
     pin = int(pin)
     switch(pin)
     return redirect(f'/device/{pin}')
 
 @app.route('/unset/<pin>/')
 def unset_pin(pin):
-    """Gerät entfernen & Pin freigeben"""
+    """Remove device and free pin"""
     pin = int(pin)
     device = db.get_device(pin)
     if device is None:
@@ -145,7 +145,7 @@ def unset_pin(pin):
 
 @app.route('/add-device', methods=['POST'])
 def add_device():
-    """Neues Output-Gerät hinzufügen"""
+    """Add new output device"""
     device_name = request.form.get('deviceName')
     pin = int(request.form.get('pin'))
     device_type = request.form.get('deviceType')
@@ -174,7 +174,7 @@ def add_device():
 
 @app.route("/add-button", methods=['POST'])
 def add_button():
-    """Button (Input->Output) anlegen"""
+    """Create button (input -> output)"""
     device_name = request.form.get('deviceName')
     input_pin = int(request.form.get('inputPin')) #24
     output_pin = int(request.form.get('outputPin'))
@@ -210,7 +210,7 @@ def add_button():
 
 @app.route("/room/<roomID>")
 def room_toggle(roomID):
-    """Alle Geräte in Raum toggeln"""
+    """Toggle all devices in room"""
     roomID = int(roomID)
     devices_in_room = db.get_all_devices_for_room(roomID)
     for device in devices_in_room:
@@ -220,7 +220,7 @@ def room_toggle(roomID):
 
 @app.route('/stats')
 def stats():
-    """Statistik / History"""
+    """Statistics / history"""
     stats = db.get_num_state_updates()
     history = db.get_history()
     return render_template("stats.html", stats=stats, history_by_minute=history)
@@ -238,7 +238,7 @@ def error():
 # call_api's
 
 def call_all_apis(url_part):
-    """Fragt alle verbundenen APIs ab (GET)"""
+    """Query all connected APIs (GET)"""
     if api_active == True:
         full_response = []
         for api in api_list:
@@ -256,7 +256,7 @@ def call_all_apis(url_part):
         return full_response
     
 def call_api(url_part, use_api):
-    """Einzel-API Anfrage"""
+    """Single API request"""
     if api_active == True:
         url = use_api['url'] + f'/api/{url_part}?code='+use_api['token']  
         response = json.loads(requests.get(url).text)[0]
@@ -264,7 +264,7 @@ def call_api(url_part, use_api):
 
 @app.route('/api/device/<pin>/', methods=['GET'])
 def call_api_device(pin):
-    """Geräte-Detail (fremdes System)"""
+    """Device detail (external system)"""
     api_id = request.args.get('system_id')
     api_call = get_api(api_id)
     response = call_api(f"get/device/{pin}", api_call)
@@ -273,7 +273,7 @@ def call_api_device(pin):
 
 @app.route('/api/switch/<pin>/', methods=['GET'])
 def call_api_device_switch(pin):
-    """Remote: Toggle Gerät"""
+    """Remote: toggle device"""
     api_id = request.args.get('system_id')
     api_call = get_api(api_id)
     response = call_api(f"set/switch/{pin}", api_call)
@@ -281,7 +281,7 @@ def call_api_device_switch(pin):
 
 @app.route('/api/unset/<pin>/', methods=['GET'])
 def call_unset_device(pin):
-    """Remote: Entfernt Gerät"""
+    """Remote: remove device"""
     api_id = request.args.get('system_id')
     api_call = get_api(api_id)
     pin = int(pin)
@@ -300,7 +300,7 @@ def info():
     return '[{ "system_id": "'+system_id+'", "version": "0.0.1", "allow_connection": "'+str(api_active)+'"}]'
 
 def auth_check(code):
-    """Tokenprüfung"""
+    """Token validation"""
     if code == access_token:
         return True
     else:
@@ -308,7 +308,7 @@ def auth_check(code):
 
 @app.route('/api/get/json/')
 def home_json():
-    """API: Alle Geräte (JSON)"""
+    """API: all devices (JSON)"""
     code = request.args.get('code')
     if auth_check(code):
         devices = FA.get_devices()
@@ -324,7 +324,7 @@ def home_json():
 
 @app.route('/api/get/device/<pin>/')
 def api_device(pin):
-    """API: Einzel-Gerät Status"""
+    """API: single device status"""
     code = request.args.get('code')
     if auth_check(code):
         pin = int(pin)
@@ -336,7 +336,7 @@ def api_device(pin):
 
 @app.route('/api/set/switch/<pin>/')
 def api_device_switch(pin):
-    """API: Toggle Gerät"""
+    """API: toggle device"""
     code = request.args.get('code')
     if auth_check(code):
         pin = int(pin)
@@ -349,7 +349,7 @@ def api_device_switch(pin):
 
 @app.route('/api/set/unset/<pin>')
 def api_set_unset_device(pin):
-    """API: Gerät entfernen"""
+    """API: remove device"""
     code = request.args.get('code')
     if auth_check(code):
         pin = int(pin)
@@ -367,7 +367,7 @@ def api_set_unset_device(pin):
 call_api_info()
 
 def start():
-    """Startet Flask (extern aufrufbar)"""
+    """Start Flask (externally callable)"""
     app.run(debug=True, port=config['DEFAULT']['port'].strip('"'), host='0.0.0.0')
 
 start()
