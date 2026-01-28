@@ -194,6 +194,7 @@
         .stats-link {
             padding-left: 10px;
         }
+        .muted { color: #aaa; font-size: 0.9em; }
         /* Extra styling for our new "All Buttons" section */
         .all-buttons-container {
             margin: 20px 0;
@@ -215,6 +216,7 @@
             <a href="/stats"><h1 class="stats-link">Stats</h1></a>
         </div>
         <div class="right">
+            <button class="room-button" onclick="window.location.href='/sensors'">Sensors</button>
             <button class="room-button" onclick="openOverlay()">Add Device</button>
             <button class="room-button" onclick="openButtonOverlay()">Add Button</button>
         </div>
@@ -252,6 +254,23 @@
     {% endif %}
 
     <div class="container">
+        {% if latest_sensor %}
+        <div class="room-block">
+            <div class="room-heading">
+                <h2 class="room-title">Environment</h2>
+                <div class="room-button" onclick="window.location.href='/sensors'">Open Live View</div>
+            </div>
+            <div class="devices-container">
+                <div class="device">
+                    <p><strong>Temperature:</strong> {{ latest_sensor.temperature_c }} °C</p>
+                    <p><strong>Humidity:</strong> {{ latest_sensor.humidity }} %</p>
+                    <p><strong>Pressure:</strong> {{ latest_sensor.pressure_hpa }} hPa</p>
+                    <p><strong>Gas:</strong> {{ latest_sensor.gas_ohms }} Ω</p>
+                    <p class="muted">Last update: {{ latest_sensor.timestamp }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         <!-- Devices by room -->
         {% for roomID, devices_in_room in devices_by_room.items() %}
             {% if roomID == 1000%}

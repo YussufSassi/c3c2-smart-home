@@ -1,4 +1,7 @@
-from flask import Flask, render_template, redirect, request, url_for, render_template_string, flash, abort
+from flask import Flask, render_template, redirect, request, url_for, render_template_string, flash, abort, jsonify
+import threading
+import time as _time
+import os
 import led as LEDC
 import file_access as FA
 import requests
@@ -9,6 +12,7 @@ import run_on_start as setup2
 from db import DBWrapper
 from buttons.press_button import PressButton
 from buttons.switch_button import SwitchButton
+from sensors.bme680_sensor import read_bme680
 
 # Central Flask app for smart-home mini system
 # Core features: device management, buttons, remote API, history
@@ -103,12 +107,26 @@ def home():
     num_rooms = db.get_number_of_rooms()
     grouped_devices = db.get_all_devices_grouped_by_room()
     all_buttons = db.get_all_buttons()
+    # Sensor: read current and persist; fall back to last stored
+    current_reading = read_bme680()
+    latest_sensor = None
+    if current_reading.get('available'):
+        try:
+            db.insert_sensor_reading('bme680', current_reading)
+            latest_sensor = current_reading
+        except Exception:
+            latest_sensor = current_reading
+    else:
+        try:
+            latest_sensor = db.get_latest_sensor_reading('bme680')
+        except Exception:
+            latest_sensor = None
 
     if config['SYSTEM']['connect2api'].strip('"') == "true":
         for response in call_all_apis("json"):
             devices += response
 
-    return render_template('index.html', devices_by_room=grouped_devices, all_devices=devices, all_button_devices=all_buttons)
+    return render_template('index.html', devices_by_room=grouped_devices, all_devices=devices, all_button_devices=all_buttons, latest_sensor=latest_sensor)
 
 @app.route('/device/<pin>/')
 def device(pin):
@@ -223,7 +241,11 @@ def stats():
     """Statistics / history"""
     stats = db.get_num_state_updates()
     history = db.get_history()
-    return render_template("stats.html", stats=stats, history_by_minute=history)
+    return render_template("stats.html", stats=stats, history_by_minute=history, api_code=access_token)
+
+@app.route('/sensors')
+def sensors_view():
+    return render_template('sensors.html', api_code=access_token)
 
 
 @app.route('/<all>')
@@ -347,6 +369,57 @@ def api_device_switch(pin):
         return '[{ "pin": '+str(pin)+', "system_id": "'+system_id+'" }]'
     return "[{ 'error': 'Authorisation failed' }]"
 
+@app.route('/api/sensors/bme680')
+def api_sensor_bme680():
+    code = request.args.get('code')
+    if not auth_check(code):
+        abort(401)
+    reading = read_bme680()
+    if reading.get('available'):
+        try:
+            db.insert_sensor_reading('bme680', reading)
+        except Exception:
+            pass
+    return jsonify(reading)
+
+@app.route('/api/sensors/bme680/history')
+def api_sensor_bme680_history():
+    code = request.args.get('code')
+    if not auth_check(code):
+        abort(401)
+    try:
+        limit = int(request.args.get('limit', 300))
+    except Exception:
+        limit = 300
+    items = db.get_sensor_history('bme680', limit)
+    return jsonify(items)
+
+_sensor_thread_started = False
+
+def _sensor_sampler_loop(interval_sec: int = 10):
+    while True:
+        try:
+            reading = read_bme680()
+            if reading.get('available'):
+                db.insert_sensor_reading('bme680', reading)
+        except Exception:
+            pass
+        _time.sleep(interval_sec)
+
+def _maybe_start_sampler():
+    global _sensor_thread_started
+    if _sensor_thread_started:
+        return
+    if app.debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        return
+    try:
+        interval = int(config['DEFAULT'].get('sensor_interval', '10').strip('"') or 10)
+    except Exception:
+        interval = 10
+    th = threading.Thread(target=_sensor_sampler_loop, args=(interval,), daemon=True)
+    th.start()
+    _sensor_thread_started = True
+
 @app.route('/api/set/unset/<pin>')
 def api_set_unset_device(pin):
     """API: remove device"""
@@ -368,6 +441,7 @@ call_api_info()
 
 def start():
     """Start Flask (externally callable)"""
+    _maybe_start_sampler()
     app.run(debug=True, port=config['DEFAULT']['port'].strip('"'), host='0.0.0.0')
 
 start()

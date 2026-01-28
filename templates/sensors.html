@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Readings</title>
+    <style>
+        body { background-color: #121212; color: #ffffff; font-family: Arial, sans-serif; margin: 0; }
+        .header { background-color: #1e1e1e; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .container { padding: 20px; display: flex; justify-content: center; }
+        .card { background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 20px; width: 420px; }
+        .row { display: flex; justify-content: space-between; margin: 10px 0; }
+        .muted { color: #aaa; font-size: 0.9em; }
+        .error { background-color: #f4433688; border: #ff2a1b 1px solid; padding: 10px; border-radius: 6px; }
+        .success { background-color: #4CAF5088; border: #2eca33 1px solid; padding: 10px; border-radius: 6px; }
+        button { background-color: #1b1b1d; border: 1px solid #2f3031; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        button:hover { opacity: 0.85; }
+        .actions { display: flex; gap: 8px; }
+    </style>
+    <script>
+        async function refreshReading() {
+            const status = document.getElementById('status');
+            status.textContent = 'Refreshing...';
+            try {
+                const res = await fetch(`/api/sensors/bme680?code={{ api_code }}`);
+                const data = await res.json();
+                status.textContent = '';
+                const state = document.getElementById('state');
+                if (!data.available) {
+                    state.innerHTML = `<div class="error">${data.error || 'Sensor unavailable'}</div>`;
+                    return;
+                }
+                document.getElementById('temp_c').textContent = data.temperature_c.toFixed(2) + ' °C';
+                document.getElementById('temp_f').textContent = data.temperature_f.toFixed(2) + ' °F';
+                document.getElementById('humidity').textContent = data.humidity.toFixed(2) + ' %';
+                document.getElementById('pressure').textContent = data.pressure_hpa.toFixed(2) + ' hPa';
+                document.getElementById('gas').textContent = data.gas_ohms.toFixed(0) + ' Ω';
+                document.getElementById('timestamp').textContent = new Date(data.timestamp * 1000).toLocaleString();
+            } catch (e) {
+                status.textContent = '';
+                document.getElementById('state').innerHTML = `<div class="error">Failed to load data</div>`;
+            }
+        }
+        window.addEventListener('load', () => {
+            refreshReading();
+            setInterval(refreshReading, 5000);
+        });
+    </script>
+    </head>
+<body>
+    <div class="header">
+        <div><h1 style="margin:0;">Sensors</h1></div>
+        <div class="actions">
+            <button onclick="location.href='/'">Home</button>
+            <button onclick="refreshReading()">Refresh</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="card">
+            <div id="state" class="success" style="display:none"></div>
+            <div class="row"><div>Temperature:</div><div><span id="temp_c">–</span> / <span id="temp_f">–</span></div></div>
+            <div class="row"><div>Humidity:</div><div id="humidity">–</div></div>
+            <div class="row"><div>Pressure:</div><div id="pressure">–</div></div>
+            <div class="row"><div>Gas:</div><div id="gas">–</div></div>
+            <div class="row muted"><div>Last update:</div><div id="timestamp">–</div></div>
+            <div id="status" class="muted"></div>
+        </div>
+    </div>
+</body>
+</html>

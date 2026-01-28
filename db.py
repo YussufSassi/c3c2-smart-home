@@ -80,10 +80,22 @@ class DBWrapper:
             );
         """)
 
-        # Default device types (fixed ids): 1=output, 2=input, 3=virt
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS sensor_readings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                sensor_type TEXT NOT NULL,
+                temperature_c REAL,
+                humidity REAL,
+                pressure_hpa REAL,
+                gas_ohms REAL
+            );
+        """)
+
+        # Default device types (fixed ids): 1=output, 2=input, 3=virt, 4=sensor
         self.cur.executemany("""
             INSERT OR IGNORE INTO device_type (id, device_type) VALUES (?, ?);
-        """, [(1, 'output'), (2, 'input'), (3, 'virtual_input')])
+        """, [(1, 'output'), (2, 'input'), (3, 'virtual_input'), (4, 'sensor')])
         time_to_build = t.time() - start
         self.cur.execute("""
             INSERT INTO logs (type, code, message, deviceID)
@@ -241,8 +253,51 @@ class DBWrapper:
         """).fetchall()
         
 
+    def insert_sensor_reading(self, sensor_type: str, reading: dict):
+        self.cur.execute(
+            """
+            INSERT INTO sensor_readings (
+                sensor_type, temperature_c, humidity, pressure_hpa, gas_ohms
+            ) VALUES (?, ?, ?, ?, ?);
+            """,
+            (
+                sensor_type,
+                reading.get("temperature_c"),
+                reading.get("humidity"),
+                reading.get("pressure_hpa"),
+                reading.get("gas_ohms"),
+            ),
+        )
+        self.connection.commit()
+
+    def get_latest_sensor_reading(self, sensor_type: str = 'bme680'):
+        return self.cur.execute(
+            """
+            SELECT * FROM sensor_readings
+            WHERE sensor_type = ?
+            ORDER BY timestamp DESC, id DESC
+            LIMIT 1;
+            """,
+            (sensor_type,),
+        ).fetchone()
+
+    def get_sensor_history(self, sensor_type: str = 'bme680', limit: int = 300):
+        rows = self.cur.execute(
+            """
+            SELECT 
+                strftime('%s', timestamp) AS ts,
+                temperature_c, humidity, pressure_hpa, gas_ohms
+            FROM sensor_readings
+            WHERE sensor_type = ?
+            ORDER BY timestamp DESC, id DESC
+            LIMIT ?;
+            """,
+            (sensor_type, limit),
+        ).fetchall()
+        return list(reversed(rows))
+
+
     def close(self):
         """Close DB connection"""
         if self.connection:
             self.connection.close()
-

@@ -57,6 +57,9 @@
                 flex-direction: column;
                 padding: 20px;
             }
+            .charts { margin-bottom: 30px; }
+            .chart-card { background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+            canvas { width: 100%; height: 240px; background-color: #121212; border-radius: 6px; }
 
             /* Minute block styling */
             .minute-block {
@@ -202,6 +205,16 @@
 
         <!-- Main content -->
         <div class="container">
+            <div class="charts">
+                <div class="chart-card">
+                    <h2 style="margin-top:0">Temperature (°C) and Humidity (%)</h2>
+                    <canvas id="chart_th" width="800" height="240"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h2 style="margin-top:0">Pressure (hPa) and Gas (Ω)</h2>
+                    <canvas id="chart_pg" width="800" height="240"></canvas>
+                </div>
+            </div>
             <!--
               history_by_minute is expected to be a dict or OrderedDict with
               keys like "2025-01-09 10:23" and values as a list of device rows:
@@ -280,6 +293,59 @@
         </div>
     
         <script>
+            async function loadSensorHistory() {
+                try {
+                    const res = await fetch(`/api/sensors/bme680/history?code={{ api_code }}&limit=300`);
+                    const data = await res.json();
+                    drawCharts(data);
+                } catch (e) {
+                    console.error('Failed to load sensor history', e);
+                }
+            }
+
+            function drawCharts(data) {
+                const t = data.map(d => parseFloat(d.temperature_c)).filter(v => !isNaN(v));
+                const h = data.map(d => parseFloat(d.humidity)).filter(v => !isNaN(v));
+                const p = data.map(d => parseFloat(d.pressure_hpa)).filter(v => !isNaN(v));
+                const g = data.map(d => parseFloat(d.gas_ohms)).filter(v => !isNaN(v));
+                drawLineChart(document.getElementById('chart_th'), [t, h], ['#1f67aa', '#2eca33']);
+                drawLineChart(document.getElementById('chart_pg'), [p, g], ['#cfa01f', '#aa1f67']);
+            }
+
+            function drawLineChart(canvas, seriesList, colors) {
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width, H = canvas.height;
+                ctx.clearRect(0,0,W,H);
+                const pad = 30; // left/right/top/bottom
+                let allValues = [];
+                seriesList.forEach(s => allValues = allValues.concat(s));
+                if (allValues.length === 0) return;
+                let minY = Math.min(...allValues), maxY = Math.max(...allValues);
+                if (minY === maxY) { minY -= 1; maxY += 1; }
+                const plotW = W - pad*2, plotH = H - pad*2;
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i=0; i<=5; i++) {
+                    const y = pad + (plotH * i/5);
+                    ctx.moveTo(pad, y); ctx.lineTo(pad+plotW, y);
+                }
+                ctx.stroke();
+                seriesList.forEach((series, idx) => {
+                    if (series.length < 2) return;
+                    ctx.strokeStyle = colors[idx % colors.length];
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    series.forEach((v, i) => {
+                        const x = pad + (plotW * (i/(series.length-1)));
+                        const y = pad + plotH - ((v - minY) / (maxY - minY)) * plotH;
+                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    });
+                    ctx.stroke();
+                });
+            }
+
+            loadSensorHistory();
             function openOverlay() {
                 document.getElementById('overlay').style.display = 'flex';
             }
